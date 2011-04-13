@@ -33,15 +33,15 @@ endif()
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 
+add_subdirectory(src/AlgLib)
 add_subdirectory(src/Graphite)
 add_subdirectory(src/Common)
 add_subdirectory(src/Numerical)
 add_subdirectory(src/ModelMesh)
-add_subdirectory(src/MainWindow)
 add_subdirectory(src/OpenGL)
 add_subdirectory(src/Param)
 add_subdirectory(src/UI)
-
+add_subdirectory(src/MainWindow)
      
         
        

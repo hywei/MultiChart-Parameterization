@@ -9,10 +9,10 @@
    E_H: 5x5
  */
 
-void calc_E(double *E, const double *x, const double *c);
+void calc_e(double *E, const double *x, const double *c);
 
-void calc_E_J(double *E_J, const double *x, const double *c);
+void calc_e_j(double *E_J, const double *x, const double *c);
 
-void calc_E_H(double *E_H, const double *x, const double *c);
+void calc_e_h(double *E_H, const double *x, const double *c);
 
 #endif

@@ -24,13 +24,14 @@ namespace PARAM
         Parameter(boost::shared_ptr<MeshModel> _p_mesh);
         ~Parameter();
 
-		void OptimizeAmbiguityPatch();
+        void OptimizeAmbiguityPatch(){}
 
         bool ComputeParamCoord();
 
     public:
         //! IO
         bool LoadPatchFile(const std::string& file_name);
+        bool LoadFixedCornerFile(const std::string& file_name);
 
 		int GetFaceChartID(int fid) const { return m_face_chart_array[fid]; }
         int GetVertexChartID(int vid) const { return m_vert_chart_array[vid];}
@@ -43,9 +44,9 @@ namespace PARAM
 
 		boost::shared_ptr<MeshModel> GetMeshModel() const { return p_mesh; }
 		boost::shared_ptr<ChartCreator> GetChartCreator() const { return p_chart_creator; }
-
+        
         //!
-        void ChartOptimization();        
+        
     public:
         //! for debug
 		const std::vector<int>& GetOutRangeVertArray() const { return m_out_range_vert_array; }
@@ -61,21 +62,17 @@ namespace PARAM
 
 		//! after each iterator, we need reassign vertices's chart  
 		void AdjustPatchBoundary();
-
 		void VertexRelalaxation();
 
 		void SetInitVertChartLayout();
-		void SetInitFaceChartLayout();
-		
+		void SetInitFaceChartLayout();		
 	  
 		void GetOutRangeVertices(std::vector<int>& out_range_vert_array) const;
 		bool FindValidChartForOutRangeVertex(int our_range_vert, int max_ringe_num = 5);
 		double ComputeOutRangeError4Square(ParamCoord param_coord) const;		
 		double ComputeOutRangeError4TriangleChart(ParamCoord param_coord, int chart_id);
-
 		//! get the length of a mesh path
 		double ComputeMeshPathLength(const std::vector<int>& mesh_path, int start_idx, int end_idx) const;
-
 		//! get a conner's index in a patch/chart
 		int GetConnerIndexInPatch(int conner_id, int patch_id);
 
@@ -88,11 +85,13 @@ namespace PARAM
 		//! set each chart's vertices 
 		void SetChartVerticesArray();
 
+        //! set boundary conner fixed
+        void SetFixedCornerArray();
+
 		void CheckFlipedTriangle();
 
 		//! check two charts is ambiguity(have more than one common edges)? 
-		bool IsAmbiguityChartPair(int chart_id_1, int chart_id_2) const;		
-
+		bool IsAmbiguityChartPair(int chart_id_1, int chart_id_2) const;
 		bool IsConnerVertex(int vert_vid) const;
 
 		bool GetConnerParamCoord(int chart_id, int conner_idx, ParamCoord& conner_pc) const;
@@ -110,23 +109,18 @@ namespace PARAM
 			if(value > 0) return 1;
 			else return -1;
 		}
+        
+		void ChartOptimization(ParamPatch& patch);
+
 	public:
 
 		zjucad::matrix::matrix<double> GetTransMatrix(int from_vid, int to_vid, int from_chart_id, int to_chart_id) const;
-
-// 		void TransParamCoordBetweenCharts(int from_chart_id, int to_chart_id, 
-// 			const ParamCoord& from_param_coord, ParamCoord& to_param_coord) const;
 		void TransParamCoordBetweenCharts(int from_chart_id, int to_chart_id, int vid, 
 			const ParamCoord& from_param_coord, ParamCoord& to_param_coord) const;
-		//! for one face's three vertices, they may be in different chart, and we need transite them to same chart.
-		//! so there are several choose for the common chart, and our standart is the best triangle shape in parameter domain. 
-		int FindBestChartIDForTriShape(int fid) const;
-
-		//! find the corresponding surface position with the chart paramerter coordinate
-		bool FindCorrespondingOnSurface(const ChartParamCoord& chart_param_coord,SurfaceCoord& surface_coord) const;
 
 		void ComputeDistortion();
-        
+        void ChartOptimization();
+        void SetNewtonMethodInitValue(const zjucad::matrix::matrix<double>&);
 	private:
 		boost::shared_ptr<MeshModel> p_mesh;
 		boost::shared_ptr<ChartCreator> p_chart_creator;
@@ -137,7 +131,7 @@ namespace PARAM
 		std::vector<ParamCoord> m_vert_param_coord_array; //! each vertex's parameter coordinate
 		std::vector< std::vector<int> > m_chart_vertices_array; //! 
 
-		std::vector<int> m_fixed_conner_array;
+		std::vector<int> m_fixed_conner_index_array;
 
 		//! for debug
 		std::vector<int> m_out_range_vert_array;
@@ -152,6 +146,9 @@ namespace PARAM
 		std::vector<bool> m_flippd_face;
 
         std::vector<size_t> m_new_corner;
+
+        //! inital value for chart optimziation
+        zjucad::matrix::matrix<double> m_chart_op_nw_init_value;
     };
 } 
 

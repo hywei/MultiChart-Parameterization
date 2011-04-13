@@ -13,7 +13,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent)
 	setMinimumSize(20, 20);
 	resize(1500, 900); 
 
-	glViewer = new QGLViewer;
+	glViewer = new QGLViewer(this);
 
 	m_parameter_control = new ParameterControl(glViewer, this);	
 

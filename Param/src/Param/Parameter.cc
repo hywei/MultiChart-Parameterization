@@ -3,6 +3,7 @@
 #include "TransFunctor.h"
 #include "Barycentric.h"
 #include "TriDistortion.h"
+#include "ChartOptimization.h"
 
 #include "../ModelMesh/MeshModel.h"
 #include "../Numerical/linear_solver.h"
@@ -38,11 +39,9 @@ namespace PARAM
 		return true;
 	}
 
-	void Parameter::OptimizeAmbiguityPatch()
-	{
-		if(!p_chart_creator) return;
-		p_chart_creator->OptimizePatchShape();
-	}
+    // bool Parameter::LoadFixedCornerFile(const std::string& )
+    // {
+    // }
 
 	bool Parameter::ComputeParamCoord()
 	{
@@ -67,15 +66,17 @@ namespace PARAM
 		m_flippd_face.clear();
 		m_flippd_face.resize(face_num, false);
 
-		int loop_num = 1;
+        //! set the boundary corner fixed
+        SetFixedCornerArray();
+        
+		int loop_num = 3;
 		for(int k=0; k<loop_num; ++k)
 		{
 			SolveParameter(lap_mat_with_mean_value);
-			if(k < loop_num)
-			{
+			if(k < loop_num){
                 GetOutRangeVertices(m_out_range_vert_array);
 				AdjustPatchBoundary();
-                //				ConnerRelocating();
+                ConnerRelocating();
 			}
 			
 		}	   		
@@ -89,10 +90,8 @@ namespace PARAM
 		
 		SetChartVerticesArray();
  		ComputeDistortion();
-
-// 
+        
  		CheckFlipedTriangle();
-
 		return true;
 	}
 
@@ -173,6 +172,8 @@ namespace PARAM
 
 		for(size_t i=0; i<conner_vec.size(); ++i)
 		{
+            if(find(m_fixed_conner_index_array.begin(), m_fixed_conner_index_array.end(), (int) i) != m_fixed_conner_index_array.end()) continue;
+            
 			PatchConner& conner = conner_vec[i];
 			
 			int conner_vid = conner.m_mesh_index;
@@ -332,17 +333,7 @@ namespace PARAM
 				{
 					m_vert_param_coord_array[conner_vid].s_coord = conner_pc_vec[i].s_coord;
 					m_vert_param_coord_array[conner_vid].t_coord = conner_pc_vec[i].t_coord;
-
-                    //                 std::cout <<"corner parameter coordniate: " << conner_vid << ": (" << conner_pc_vec[i].s_coord << ", " << conner_pc_vec[i].t_coord<<")" << std::endl;
-                    
-					if(p_linear_solver){
-						int var_index = conner_vid*2;
-						p_linear_solver->variable(var_index).lock();
-						p_linear_solver->variable(var_index).set_value(conner_pc_vec[i].s_coord);
-						p_linear_solver->variable(var_index + 1).lock();
-						p_linear_solver->variable(var_index + 1).set_value(conner_pc_vec[i].t_coord);
-					}
-				}
+                }
 			}
 
 			/// fix boundary vertex
@@ -351,7 +342,7 @@ namespace PARAM
 				int edge_idx = patch_edges[i];
 				const PatchEdge& patch_edge = patch_edge_array[edge_idx];
 
-				if(patch_edge.m_nb_patch_index_array.size() == 1) /// this is a boundary patch edge
+				if(patch_edge.m_nb_patch_index_array.size() == 1)
 				{
 					std::pair<int, int> conner_pair = patch_edge.m_conner_pair_index;
 					int conner_vid1 = patch_conner_array[conner_pair.first].m_mesh_index;
@@ -386,17 +377,6 @@ namespace PARAM
 
 						m_vert_param_coord_array[mesh_vert].s_coord = s_coord;						
 						m_vert_param_coord_array[mesh_vert].t_coord = t_coord;
-
-                        std::cout << "boundary parameter coordinate : " << mesh_vert << " : (" << s_coord << ", " << t_coord << ")"
-                                  <<", start: (" << start_s_coord<<", " << start_t_coord<<"), end: (" << end_s_coord <<"," << end_t_coord
-                                  <<")" << "lambda: " << lambda <<std::endl;
-						if(p_linear_solver){
-							int var_index = mesh_vert*2;
-							p_linear_solver->variable(var_index).lock();
-							p_linear_solver->variable(var_index).set_value(s_coord);
-							p_linear_solver->variable(var_index + 1).lock();
-							p_linear_solver->variable(var_index + 1).set_value(t_coord);
-						}
 					}
 				}
 			}
@@ -420,7 +400,13 @@ namespace PARAM
 		LinearSolver linear_solver(vari_num);
 
 		SetBoundaryVertexParamValue();
-		
+
+        for(size_t k=0; k<vert_num; ++k){
+            cout << m_vert_param_coord_array[k].s_coord <<" " << m_vert_param_coord_array[k].t_coord << endl;
+        }
+        
+        if(vari_num == 0) return;
+        
 		linear_solver.begin_equation();
 		for(int vid = 0; vid < vert_num; ++vid)
 		{		
@@ -435,18 +421,6 @@ namespace PARAM
 			for(int st=0; st<2; ++st)
 			{
 				linear_solver.begin_row();
-
-				bool have_boundary_vert(false);
-				for(size_t k=0; k<row_index.size(); ++k)
-				{
-					int col_vert = row_index[k];
-					int val_index = vari_index_mapping[col_vert];
-					if(val_index == -1) 
-					{
-						have_boundary_vert = true;
-						break;
-					}
-				}
 
 				double right_b = 0;
 				for(size_t k=0; k<row_index.size(); ++k)
@@ -517,13 +491,6 @@ namespace PARAM
 				if(fabs(m_vert_param_coord_array[vid].t_coord - 1) < LARGE_ZERO_EPSILON) m_vert_param_coord_array[vid].t_coord = 1.0;
 			}
 		}
-
-        ofstream fout ("parame.txt");
-        for(size_t k=0; k<m_vert_param_coord_array.size(); ++k){
-            fout <<  m_vert_param_coord_array[k].s_coord << ' ' <<
-                m_vert_param_coord_array[k].t_coord << std::endl;
-        }
-        fout.close();
 
 	}
 
@@ -814,7 +781,6 @@ namespace PARAM
 	void Parameter::ResetFaceChartLayout()
 	{
         const std::vector<ParamPatch>& param_patch_array = p_chart_creator->GetPatchArray();
-
 		const PolyIndexArray& face_list_array = p_mesh->m_Kernel.GetFaceInfo().GetIndex();
 
 		size_t face_num = face_list_array.size();
@@ -882,15 +848,6 @@ namespace PARAM
 
 			m_face_chart_array[i] = std_chart_id;
 		}
-
-		//std::cout << "There are " << m_unset_layout_face_array.size() << "unset faces." << std::endl;
-
-		ofstream fout("unset_face.txt");
-		for(size_t k=0; k<m_unset_layout_face_array.size(); ++k)
-		{
-			fout << m_unset_layout_face_array[k] << " ";
-		}
-		fout << std::endl;
 
 		int colors[48][3] = 
 		{
@@ -999,6 +956,23 @@ namespace PARAM
 		
 	}
 
+    void Parameter::SetFixedCornerArray()
+    {
+        //! set the boundary vertex as the fixed corner
+        m_fixed_conner_index_array.clear();
+        
+        std::vector<PatchConner>& conner_vec = p_chart_creator->GetPatchConnerArray();
+
+		for(size_t i=0; i<conner_vec.size(); ++i){
+            const PatchConner& conner = conner_vec[i];
+            int mesh_idx = conner.m_mesh_index;
+            if(p_mesh->m_BasicOp.IsBoundaryVertex(mesh_idx)){
+                m_fixed_conner_index_array.push_back((int)i);
+            }
+        }
+
+    }
+
     double Parameter::ComputeOutRangeError4Square(ParamCoord param_coord) const
     {
         double error=0;
@@ -1023,78 +997,6 @@ namespace PARAM
 		Coord2D b(patch.m_conner_pc_array[1].s_coord, patch.m_conner_pc_array[1].t_coord);
 		Coord2D c(patch.m_conner_pc_array[2].s_coord, patch.m_conner_pc_array[2].t_coord);
 		return DistanceToTriangle(p, a, b, c);
-	}
-
-	int Parameter::FindBestChartIDForTriShape(int fid) const
-	{
-		const PolyIndexArray& face_list_array = p_mesh->m_Kernel.GetFaceInfo().GetIndex();
-		const IndexArray& faces = face_list_array[fid];
-
-		int c_0 = m_vert_chart_array[faces[0]];
-		int c_1 = m_vert_chart_array[faces[1]];
-		int c_2 = m_vert_chart_array[faces[2]];
-
-		if(c_0 == c_1 && c_0 == c_2) return c_0;
-
-		const CoordArray& vtx_coord_array = p_mesh->m_Kernel.GetVertexInfo().GetCoord();
-		const PolyIndexArray& vtx_adjacent_array = p_mesh->m_Kernel.GetVertexInfo().GetAdjVertices();
-		std::set<int> candidate_chart_set;
-
-		for(int k=0; k<3; ++k)
-		{
-			int vid = faces[k];
-			const IndexArray& adj_vertices = vtx_adjacent_array[vid];
-			for(size_t i=0; i<adj_vertices.size(); ++i)
-			{
-				int chart_id = m_vert_chart_array[adj_vertices[i]];
-				candidate_chart_set.insert(chart_id);
-			}
-		}
-
-		double min_angle_error = numeric_limits<double>::infinity();
-		int min_error_chart_id = -1;
-		for(std::set<int>::const_iterator is = candidate_chart_set.begin(); is!=candidate_chart_set.end(); ++is)
-		{
-			int chart_id = *is;
-			std::vector<Coord2D> vtx_param_coord_array(3);
-			for(int k=0; k<3; ++k)
-			{
-				int cur_vid = faces[k];
-				int cur_chart_id = m_vert_chart_array[cur_vid];
-				ParamCoord cur_param_coord = m_vert_param_coord_array[cur_vid];
-				if(cur_chart_id != chart_id)
-				{
-					TransParamCoordBetweenCharts(cur_chart_id, chart_id, cur_vid, 
-						m_vert_param_coord_array[cur_vid], cur_param_coord);
-				}
-				vtx_param_coord_array[k] =Coord2D(cur_param_coord.s_coord, cur_param_coord.t_coord);
-			}
-			double angle_error = 0;
-			for(int k=0; k<3; ++k)
-			{
-				int vid1 = faces[k];
-				int vid2 = faces[(k+1)%3];
-				int vid3 = faces[(k+2)%3];
-				Coord vec_1 = vtx_coord_array[vid2] - vtx_coord_array[vid1];
-				Coord vec_2 = vtx_coord_array[vid3] - vtx_coord_array[vid1];
-				double angle_3d = angle(vec_1, vec_2);
-
-				Coord2D vec_3 = vtx_param_coord_array[(k+1)%3] - vtx_param_coord_array[k];
-				Coord2D vec_4 = vtx_param_coord_array[(k+2)%3] - vtx_param_coord_array[k];
-				double angle_2d = angle(vec_3, vec_4);
-
-				angle_error += (angle_3d - angle_2d) * (angle_3d - angle_2d);
-			}
-			angle_error = sqrt(angle_error);
-
-			if(angle_error < min_angle_error)
-			{
-				min_angle_error = angle_error;
-				min_error_chart_id = chart_id;
-			}
-		}
-
-		return min_error_chart_id;
 	}
 
 	void Parameter::ComputeDistortion()
@@ -1136,18 +1038,15 @@ namespace PARAM
 
 		m_fliped_face_array.clear();
 
-		for(int fid =0; fid < face_num; ++fid)
-		{
+		for(int fid =0; fid < face_num; ++fid){
 			const IndexArray& faces = face_list_array[fid];
 			int face_chart_id = m_face_chart_array[fid];
 			std::vector<double> u(3), v(3);
-			for(int i=0; i<3; ++i)
-			{
+			for(int i=0; i<3; ++i){
 				int vid = faces[i];
 				int chart_id = m_vert_chart_array[vid];
 				ParamCoord param_coord = m_vert_param_coord_array[vid];
-				if(chart_id != face_chart_id)
-				{
+				if(chart_id != face_chart_id){
 					TransParamCoordBetweenCharts(chart_id, face_chart_id, vid,
 						m_vert_param_coord_array[vid], param_coord);
 				}
@@ -1192,8 +1091,7 @@ namespace PARAM
 		if(p_chart_creator == NULL) return true;
 		const std::vector<PatchConner>& conners = p_chart_creator->GetPatchConnerArray();
 
-		for(size_t k=0; k<conners.size(); ++k)
-		{
+		for(size_t k=0; k<conners.size(); ++k){
 			if(conners[k].m_mesh_index == vert_vid) return true;
 		}
 		return false;
@@ -1206,13 +1104,11 @@ namespace PARAM
 
 		std::vector<ParamCoord> pc_vec(3);
 		int chart_id = m_face_chart_array[fid];
-		for(int i=0; i<3; ++i)
-		{
+		for(int i=0; i<3; ++i){
 			int vid = face[i];
 			int cur_chart_id = m_vert_chart_array[vid];
 			pc_vec[i] = m_vert_param_coord_array[vid];
-			if(cur_chart_id != chart_id)
-			{
+			if(cur_chart_id != chart_id){
 				TransParamCoordBetweenCharts(cur_chart_id, chart_id, vid, 
 					m_vert_param_coord_array[vid], pc_vec[i]);
 			}
@@ -1220,16 +1116,41 @@ namespace PARAM
 		return pc_vec;
 	}
 
+
     void Parameter::ChartOptimization()
     {
-    //     const vector<ParamPatch>& patch_array = p_chart_creator->GetPatchArray();
-    //     for(size_t k=0; k<patch_array.size(); ++k){
-    //         ParamPatch& patch = patch_array[k];
-    //         ChartOptimizator optimizor(*this, patch);
-    //         optimizor.Optimization();
-    //         vector<double> dof_vec = optimizor.GetDofArray();
-            
-    //     }
-        
+        vector<ParamPatch>& patch_array = p_chart_creator->GetPatchArray();
+        for(size_t k=0; k<patch_array.size(); ++k){
+            ParamPatch& patch = patch_array[k];
+            ChartOptimization(patch);
+        }
+    }
+
+    void Parameter::ChartOptimization(ParamPatch &patch)
+    {
+        ChartOptimizor chart_op(*this, patch);
+        chart_op.SetInitialValue(m_chart_op_nw_init_value);
+        chart_op.Optimization();
+
+        vector<double> dof_vec = chart_op.GetDofArray();
+
+        std::cout << "dof :" ;
+        for(size_t k=0; k<dof_vec.size(); ++k){
+            std::cout << dof_vec[k] <<" ";
+        }
+        std::cout << std::endl;
+
+        assert(dof_vec.size() == 5);
+        vector<ParamCoord> corner_pc_vec(4);
+        corner_pc_vec[0] = ParamCoord(0,0);
+        corner_pc_vec[1] = ParamCoord(dof_vec[0], 0);
+        corner_pc_vec[2] = ParamCoord(dof_vec[1], dof_vec[2]);
+        corner_pc_vec[3] = ParamCoord(dof_vec[3], dof_vec[4]);
+
+        patch.m_conner_pc_array = corner_pc_vec;
+    }
+
+    void Parameter::SetNewtonMethodInitValue(const zjucad::matrix::matrix<double>& init_value){
+        m_chart_op_nw_init_value = init_value;
     }
 }

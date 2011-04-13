@@ -116,13 +116,16 @@ namespace PARAM
             //!TODO: this is just set for quad-patch
             corner_pc_vec[0] = ParamCoord(0, 0);
             corner_pc_vec[1] = ParamCoord(1, 0);
+            //corner_pc_vec[1] = ParamCoord(3, 0);
             corner_pc_vec[2] = ParamCoord(1, 1);
+            //corner_pc_vec[2] = ParamCoord(2, 2);
             corner_pc_vec[3] = ParamCoord(0, 1);
+            //corner_pc_vec[3] = ParamCoord(1, 2);
         }
 
         std::cout << "Form " << m_patch_array.size() <<" Charts!" << std::endl;
         return true;
-    }
+    }    
 
 	void ChartCreator::SetQuadChartConnerParamCoord(int chart_id)
 	{

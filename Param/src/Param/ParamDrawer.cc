@@ -135,7 +135,7 @@ namespace PARAM
 			}
             glColor3ub(colors[c][0], colors[c][1], colors[c][2]);
 			int mesh_idx = conner_array[k].m_mesh_index;
-			DrawSphere(vCoord[mesh_idx]);
+            DrawSphere(vCoord[mesh_idx]);
 		}
 
 	}

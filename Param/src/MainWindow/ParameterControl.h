@@ -18,7 +18,8 @@ private:
 	QGroupBox* CreateSurfaceGroup(QWidget* parent = 0);
 	QGroupBox* CreateTextureGroup(QWidget* parent = 0);
 	QGroupBox* CreateVisualizationGroup(QWidget* parent = 0);
-
+    QGroupBox* CreateChartOptimizationGroup(QWidget* parent=0);
+    
 	void CreateMainLayout();
 
 private slots:
@@ -29,14 +30,18 @@ private slots:
 	void SetSelectedPatchDisplay(bool);
 	void SetFlippedTriangleDisplay(bool);
 
+    void ChartOptimization(); 
 private:
 	QGLViewer* m_gl_viewer;
 
 	QGroupBox* m_surface_group;
 	QGroupBox* m_texture_setting_group;
 	QGroupBox* m_visualization_group;
+    QGroupBox* m_chart_optimization_group;
 
     boost::shared_ptr<PARAM::Parameter> p_parameter;
+
+    QLineEdit* m_chart_init_value_le;
 };
 
 #endif

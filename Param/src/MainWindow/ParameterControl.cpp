@@ -3,6 +3,7 @@
 #include "../Param/ParamDrawer.h"
 #include "../ModelMesh/MeshModel.h"
 #include <fstream>
+#include <sstream>
 
 ParameterControl::ParameterControl(QGLViewer* _gl_viewer, QWidget* parent)
 : QWidget(parent)
@@ -12,6 +13,7 @@ ParameterControl::ParameterControl(QGLViewer* _gl_viewer, QWidget* parent)
 	m_surface_group = CreateSurfaceGroup(this);
 	m_texture_setting_group = CreateTextureGroup(this);
 	m_visualization_group = CreateVisualizationGroup(this);
+    m_chart_optimization_group = CreateChartOptimizationGroup(this);
     
 	CreateMainLayout();
 }
@@ -129,6 +131,32 @@ QGroupBox* ParameterControl::CreateVisualizationGroup(QWidget* parent /* = 0 */)
 	return visual_group;
 }
 
+QGroupBox* ParameterControl::CreateChartOptimizationGroup(QWidget* parent)
+{
+    QGroupBox* chart_op_group = new QGroupBox(parent);
+	chart_op_group->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+	chart_op_group->setTitle(tr("Chart Optimization"));
+
+    QLabel* init_value_lb = new QLabel(chart_op_group);
+    init_value_lb->setText(tr("Init Value"));
+    m_chart_init_value_le = new QLineEdit(chart_op_group);
+    m_chart_init_value_le->setText(tr("1 1 1 0 1"));
+    
+    QPushButton* chart_op_pb = new QPushButton(chart_op_group);
+    chart_op_pb->setText(tr("Chart Optimiization"));
+    
+    QVBoxLayout* chart_op_layout = new QVBoxLayout(chart_op_group);
+    
+    chart_op_layout->addWidget(init_value_lb);
+    chart_op_layout->addWidget(m_chart_init_value_le);
+    chart_op_layout->addWidget(chart_op_pb);
+    
+    /// connects
+    connect(chart_op_pb, SIGNAL(clicked()), this, SLOT(ChartOptimization()));
+    
+    return chart_op_group;
+}
+
 void ParameterControl::SetPatchConnerDisplay(bool toggled)
 {
 	if(m_gl_viewer && m_gl_viewer->p_param_drawer) {
@@ -177,6 +205,25 @@ void ParameterControl::SetFlippedTriangleDisplay(bool toggled)
 	}
 }
 
+void ParameterControl::ChartOptimization()
+{
+    std::vector<double> init_value(5, 1);
+    init_value[3] = 0;
+    
+    std::string init_value_str = m_chart_init_value_le->text().toStdString();
+    //    std::cout << init_value_str << std::endl;
+    std::stringstream stream;
+    stream << init_value_str;
+    stream >> init_value[0] >> init_value[1] >> init_value[2] >> init_value[3] >> init_value[4] ;
+    
+    //    std::cout << init_value[0] <<" " << init_value[1] << " " << init_value[2] << " " << init_value[3] << " " << init_value[4] << std::endl;
+    
+    if(m_gl_viewer){
+        m_gl_viewer-> SetChartInitValue(init_value);
+        m_gl_viewer-> ChartOptimization();
+    }
+}
+
 void ParameterControl::CreateMainLayout()
 {
    QGroupBox* main_group = new QGroupBox(this);
@@ -189,6 +236,7 @@ void ParameterControl::CreateMainLayout()
    main_group_layout->addWidget(m_surface_group);
    main_group_layout->addWidget(m_texture_setting_group);
    main_group_layout->addWidget(m_visualization_group);
+   main_group_layout->addWidget(m_chart_optimization_group);
    main_group_layout->addStretch(1);
 
 }

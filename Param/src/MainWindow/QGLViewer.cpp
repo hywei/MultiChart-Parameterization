@@ -18,6 +18,9 @@
 #include "../Common/Utility.h"
 #include "../Param/Parameter.h"
 #include "../Param/ParamDrawer.h"
+#include <hj_3rd/hjlib/math/blas_lapack.h>
+#include <hj_3rd/zjucad/matrix/matrix.h>
+
 using namespace Qt;
 
 
@@ -336,6 +339,23 @@ void QGLViewer::SolveParameter()
 	if(p_param == NULL) return;
 	p_param->ComputeParamCoord();
 	updateGL();
+}
+
+void QGLViewer::SetChartInitValue(const std::vector<double>& init_value)
+{
+    if(p_param == NULL) return;
+    if(init_value.size() != 5) return;
+    zjucad::matrix::matrix<double> mat(5, 1);
+    for(size_t i=0; i<5; ++i) mat(i, 0) = init_value[i];
+    p_param->SetNewtonMethodInitValue(mat);
+}
+
+void QGLViewer::ChartOptimization()
+{
+    if(p_param == NULL) return;
+    
+    p_param->ChartOptimization();
+    updateGL();
 }
 
 void QGLViewer::LoadFaceTexCoord()

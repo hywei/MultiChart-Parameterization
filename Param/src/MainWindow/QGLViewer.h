@@ -59,8 +59,6 @@ public slots:
 	void saveMeshModel();
 	int loadTextureImage();
 	int loadQuadFile();
-
-
 	
 	void mouseSpin();
 	void mouseMove();
@@ -80,6 +78,8 @@ public slots:
 	void SetParamDrawerSelectVertMode();
 	void SetParamDrawerCorrespondMode();
 
+    void SetChartInitValue(const std::vector<double>&);
+    void ChartOptimization();
 private slots:
 	void RenderingSolidSmooth();
 	void RenderingSolidFlat();

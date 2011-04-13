@@ -30,16 +30,19 @@ set ( DEPENDENCIES ui
                    numerical
                    common
                    graphite
+                   alglib
                     )
 
-#add_dependencies( ${DEPENDENCIES})
-add_dependencies ( graphite
-                   common
-                   numerical
-                   meshmodel
-                   param
-                   opengl
-                   ui) 
+add_dependencies (
+  alglib
+  graphite
+  common
+  numerical
+  meshmodel
+  param
+  opengl
+  ui
+  ) 
                                       
 
 if(WIN32)
@@ -63,6 +66,7 @@ target_link_libraries( MainWindow
                        ${NUMERIC_LIBRARIES}
                        ${HJ_3RD_LIBRARIES}
                        ${DEPENDENCIES}
+                       quad_dof
                      )
                   
         
