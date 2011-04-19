@@ -23,9 +23,7 @@ namespace PARAM
     public:
         Parameter(boost::shared_ptr<MeshModel> _p_mesh);
         ~Parameter();
-
-        void OptimizeAmbiguityPatch(){}
-
+        
         bool ComputeParamCoord();
 
     public:
@@ -95,8 +93,7 @@ namespace PARAM
 		bool IsConnerVertex(int vert_vid) const;
 
 		bool GetConnerParamCoord(int chart_id, int conner_idx, ParamCoord& conner_pc) const;
-
-	private:
+        
 		/// Conner Relocating
 		void ConnerRelocating();
 	    void ComputeConnerVertexNewParamCoord(int conner_vid, ParamCoord& new_pc) const;        
@@ -110,13 +107,12 @@ namespace PARAM
 			else return -1;
 		}
         
-		void ChartOptimization(ParamPatch& patch);
+        void ChartOptimization(ParamPatch& patch, std::vector<double>&);
 
 	public:
 
 		zjucad::matrix::matrix<double> GetTransMatrix(int from_vid, int to_vid, int from_chart_id, int to_chart_id) const;
-		void TransParamCoordBetweenCharts(int from_chart_id, int to_chart_id, int vid, 
-			const ParamCoord& from_param_coord, ParamCoord& to_param_coord) const;
+		void TransParamCoordBetweenCharts(int from_chart_id, int to_chart_id, int vid, const ParamCoord& from_param_coord, ParamCoord& to_param_coord) const;
 
 		void ComputeDistortion();
         void ChartOptimization();

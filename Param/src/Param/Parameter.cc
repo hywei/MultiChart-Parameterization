@@ -33,15 +33,11 @@ namespace PARAM
 		p_chart_creator->LoadPatchFile(file_name);
 		if(!p_chart_creator->FormParamCharts())
 		{
-			std::cout<<"Error: Cannot compute parameteriztion!\n";
+			std::cout<<"Error: Cnanot compute parameteriztion!\n";
 			return false;
 		}
 		return true;
 	}
-
-    // bool Parameter::LoadFixedCornerFile(const std::string& )
-    // {
-    // }
 
 	bool Parameter::ComputeParamCoord()
 	{
@@ -69,23 +65,23 @@ namespace PARAM
         //! set the boundary corner fixed
         SetFixedCornerArray();
         
-		int loop_num = 3;
+		int loop_num = 1;
 		for(int k=0; k<loop_num; ++k)
 		{
 			SolveParameter(lap_mat_with_mean_value);
 			if(k < loop_num){
                 GetOutRangeVertices(m_out_range_vert_array);
 				AdjustPatchBoundary();
-                ConnerRelocating();
+                //                ConnerRelocating();
 			}
 			
 		}	   		
 
 		GetOutRangeVertices(m_out_range_vert_array);
         //		AdjustPatchBoundary();
-        GetOutRangeVertices(m_out_range_vert_array);
+        //  GetOutRangeVertices(m_out_range_vert_array);
         
-		ResetFaceChartLayout();
+		// ResetFaceChartLayout();
 		SetMeshFaceTextureCoord();
 		
 		SetChartVerticesArray();
@@ -712,8 +708,7 @@ namespace PARAM
 		return false;
 	}
     
-	void Parameter::TransParamCoordBetweenCharts(int from_chart_id, int to_chart_id, int vid, 
-		const ParamCoord& from_param_coord, ParamCoord& to_param_coord) const
+	void Parameter::TransParamCoordBetweenCharts(int from_chart_id, int to_chart_id, int vid, const ParamCoord& from_param_coord, ParamCoord& to_param_coord) const
 	{
 		TransFunctor tran_functor(p_chart_creator);
 		
@@ -1120,34 +1115,39 @@ namespace PARAM
     void Parameter::ChartOptimization()
     {
         vector<ParamPatch>& patch_array = p_chart_creator->GetPatchArray();
+        vector< vector<double> > dof_vec(patch_array.size());
         for(size_t k=0; k<patch_array.size(); ++k){
             ParamPatch& patch = patch_array[k];
-            ChartOptimization(patch);
+            ChartOptimization(patch, dof_vec[k]);
+        }
+
+
+        for(size_t k=0; k<patch_array.size(); ++k){
+            vector<ParamCoord> corner_pc_vec(4);
+            corner_pc_vec[0] = ParamCoord(0,0);
+            corner_pc_vec[1] = ParamCoord(dof_vec[k][0], 0);
+            corner_pc_vec[2] = ParamCoord(dof_vec[k][1], dof_vec[k][2]);
+            corner_pc_vec[3] = ParamCoord(dof_vec[k][3], dof_vec[k][4]);
+            patch_array[k].m_conner_pc_array = corner_pc_vec;
         }
     }
 
-    void Parameter::ChartOptimization(ParamPatch &patch)
+    void Parameter::ChartOptimization(ParamPatch &patch, vector<double>& dof)
     {
         ChartOptimizor chart_op(*this, patch);
         chart_op.SetInitialValue(m_chart_op_nw_init_value);
         chart_op.Optimization();
 
-        vector<double> dof_vec = chart_op.GetDofArray();
+        dof = chart_op.GetDofArray();
 
         std::cout << "dof :" ;
-        for(size_t k=0; k<dof_vec.size(); ++k){
-            std::cout << dof_vec[k] <<" ";
+        for(size_t k=0; k<dof.size(); ++k){
+            std::cout << dof[k] <<" ";
         }
         std::cout << std::endl;
 
-        assert(dof_vec.size() == 5);
-        vector<ParamCoord> corner_pc_vec(4);
-        corner_pc_vec[0] = ParamCoord(0,0);
-        corner_pc_vec[1] = ParamCoord(dof_vec[0], 0);
-        corner_pc_vec[2] = ParamCoord(dof_vec[1], dof_vec[2]);
-        corner_pc_vec[3] = ParamCoord(dof_vec[3], dof_vec[4]);
+        assert(dof.size() == 5);
 
-        patch.m_conner_pc_array = corner_pc_vec;
     }
 
     void Parameter::SetNewtonMethodInitValue(const zjucad::matrix::matrix<double>& init_value){

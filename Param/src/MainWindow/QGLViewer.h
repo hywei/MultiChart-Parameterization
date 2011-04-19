@@ -67,8 +67,7 @@ public slots:
 	void CreateSquareTexture();
 	void CreateLineTexture();
 	void CreateBoundaryTexture();
-
-	void OptimizeAmbiguityPatch();
+    
 	void SolveParameter();
 
 	void SaveFaceTexCoord();

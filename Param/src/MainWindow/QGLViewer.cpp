@@ -327,13 +327,6 @@ void QGLViewer::CreateBoundaryTexture()
 	updateGL();
 }
 
-void QGLViewer::OptimizeAmbiguityPatch()
-{
-	if(p_param == NULL) return;
-	p_param->OptimizeAmbiguityPatch();
-	updateGL();
-}
-
 void QGLViewer::SolveParameter()
 {
 	if(p_param == NULL) return;

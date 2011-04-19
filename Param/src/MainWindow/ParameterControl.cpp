@@ -87,7 +87,7 @@ QGroupBox* ParameterControl::CreateVisualizationGroup(QWidget* parent /* = 0 */)
 {
 	QGroupBox* visual_group = new QGroupBox(parent);
 	visual_group->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
-	visual_group->setTitle(tr("Visulzation"));
+	visual_group->setTitle(tr("Visualization"));
 
 	/// child widgets
 	// QRadioButton* patch_layout = new QRadioButton(visual_group);

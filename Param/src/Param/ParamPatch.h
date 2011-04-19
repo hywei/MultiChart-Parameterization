@@ -34,7 +34,7 @@ namespace PARAM
     class ParamPatch
     {
     public:
-        ParamPatch(){ m_valid_range = std::make_pair(0.0, 1.0); }
+        ParamPatch() { m_valid_range = std::make_pair(0.0, 1.0); patch_id = -1;}
         ~ParamPatch(){}
 
         
@@ -66,6 +66,8 @@ namespace PARAM
         //! the corresponding chart
         std::vector<ParamCoord> m_conner_pc_array; //! each corner's parameter coordinate
         std::pair<double, double> m_valid_range;
+
+        int patch_id;
     };
 }
 

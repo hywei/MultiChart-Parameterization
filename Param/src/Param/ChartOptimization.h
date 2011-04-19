@@ -34,21 +34,9 @@ namespace PARAM{
         
     private:
         zjucad::matrix::matrix<double> CalInitialValue() const;
-
-        //! solve with simple newton method, return the optimization value
-        std::vector<double> SolveWithNewtonMethod() const;
         //! solve with lbfgs by alglib
         std::vector<double> SolveWithLbfgs() const;
-        
-        zjucad::matrix::matrix<double> CalTempMatrix_1(int fid) const;
-        zjucad::matrix::matrix<double> CalTempMatrix_2(int fid) const;
-        double CalFaceAreaInParamDomain(int fid) const;
-
-        double CalTriIsometricDistoritionEnergy(int fid) const;
-
-        void CheckJacobian() const;
-        zjucad::matrix::matrix<double> CalJacMat(int ) const;
-        zjucad::matrix::matrix<double> CalJacMat_B(int ) const;
+        zjucad::matrix::matrix<double> CalRightMatrix(int fid) const;
     private:
         const Parameter& m_parameter;
         const ParamPatch& m_patch;
